@@ -7,7 +7,7 @@ import os
 load_dotenv()
 
 # Hard-coded fallback for MongoDB URL in case environment variable doesn't work
-MONGODB_FALLBACK = "mongodb+srv://evangelinemariadurai_db_user:evangeline123@cluster0.emwcxuy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGODB_FALLBACK = os.getenv("MONGO_URI")
 
 class Settings(BaseSettings):
     # Get MongoDB URL from environment or use a fallback

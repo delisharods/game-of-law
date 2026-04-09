@@ -10,7 +10,7 @@ from bson import ObjectId
 import os
 
 # Database configuration
-MONGODB_URL = "mongodb+srv://evangelinemariadurai_db_user:evangeline123@cluster0.emwcxuy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = os.getenv("MONGO_URI")
 DATABASE_NAME = "game_of_law"
 
 async def cleanup_test_data():
