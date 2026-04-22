@@ -112,6 +112,37 @@ const styles = `
   .gen-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .gen-btn.active { background: #7c3a00; color: white; }
 
+  /* ── Word Limit Row ── */
+  .word-limit-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .word-limit-label {
+    font-size: 0.82rem;
+    color: #7c3a00;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .word-limit-input {
+    width: 90px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1.5px solid #ffd8a8;
+    font-size: 0.88rem;
+    color: #7c3a00;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .word-limit-input:focus { border-color: #7c3a00; }
+  .word-limit-hint { font-size: 0.75rem; color: #aaa; }
+
   /* ── Tabs ── */
   .tabs {
     display: flex;
@@ -394,7 +425,7 @@ function MindNode({ node, depth = 0, index = 0 }) {
 function FlashcardsView({ cards }) {
   const [flipped, setFlipped] = useState({});
   const [current, setCurrent] = useState(0);
-  const [mode, setMode] = useState("grid"); // grid | single
+  const [mode, setMode] = useState("grid");
 
   if (!cards?.length) return null;
 
@@ -545,16 +576,17 @@ function SummaryView({ summary }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function DynamicPDFLearning() {
-  const [file, setFile]           = useState(null);
-  const [dragOver, setDragOver]   = useState(false);
-  const [activeTab, setActiveTab] = useState(null);
-  const [loading, setLoading]     = useState(null);
-  const [errors, setErrors]       = useState({});
+  const [file, setFile]                     = useState(null);
+  const [dragOver, setDragOver]             = useState(false);
+  const [activeTab, setActiveTab]           = useState(null);
+  const [loading, setLoading]               = useState(null);
+  const [errors, setErrors]                 = useState({});
+  const [summaryWordLimit, setSummaryWordLimit] = useState(300); // ── NEW
 
-  const [summary,   setSummary]   = useState(null);
-  const [mindmap,   setMindmap]   = useState(null);
-  const [questions, setQuestions] = useState(null);
-  const [flashcards,setFlashcards]= useState(null);
+  const [summary,    setSummary]    = useState(null);
+  const [mindmap,    setMindmap]    = useState(null);
+  const [questions,  setQuestions]  = useState(null);
+  const [flashcards, setFlashcards] = useState(null);
 
   const fileRef = useRef();
 
@@ -562,7 +594,6 @@ export default function DynamicPDFLearning() {
   const handleFile = (f) => {
     if (!f || f.type !== "application/pdf") return alert("Please upload a PDF file.");
     setFile(f);
-    // reset all generated content when new file uploaded
     setSummary(null); setMindmap(null); setQuestions(null); setFlashcards(null);
     setActiveTab(null); setErrors({});
   };
@@ -589,6 +620,7 @@ export default function DynamicPDFLearning() {
       const fd = makeFormData();
 
       if (type === "summary") {
+        fd.append("word_limit", summaryWordLimit); // ── NEW: send word limit
         const res = await axios.post(`${API}/ai/pdf-summary`, fd, { headers: { "Content-Type": "multipart/form-data" } });
         result = res.data.summary;
         setSummary(result);
@@ -623,7 +655,6 @@ export default function DynamicPDFLearning() {
   ];
 
   const isLoading = (t) => loading === t;
-  const hasData   = (t) => tabs.find(x => x.key === t)?.data;
 
   return (
     <>
@@ -652,7 +683,7 @@ export default function DynamicPDFLearning() {
           </div>
         )}
 
-        {/* File pill + change */}
+        {/* File pill */}
         {file && (
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <div className="file-pill">
@@ -665,6 +696,24 @@ export default function DynamicPDFLearning() {
         {/* Generate Buttons */}
         {file && (
           <div className="gen-buttons">
+
+            {/* ── NEW: Summary word limit input ── */}
+            <div className="word-limit-row">
+              <span className="word-limit-label">📋 Summary word limit:</span>
+              <input
+                type="number"
+                min={50}
+                max={2000}
+                value={summaryWordLimit}
+                className="word-limit-input"
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  if (val >= 50 && val <= 2000) setSummaryWordLimit(val);
+                }}
+              />
+              <span className="word-limit-hint">words (50 – 2000, applies to Summary only)</span>
+            </div>
+
             {[
               { key: "summary",    icon: "📋", label: "Generate Summary" },
               { key: "mindmap",    icon: "🧠", label: "Generate Mind Map" },
@@ -681,7 +730,7 @@ export default function DynamicPDFLearning() {
           </div>
         )}
 
-        {/* Tabs (only show if at least one has data) */}
+        {/* Tabs */}
         {file && tabs.some(t => t.data) && (
           <div className="tabs">
             {tabs.filter(t => t.data || activeTab === t.key).map(t => (
@@ -724,7 +773,7 @@ export default function DynamicPDFLearning() {
         {!loading && activeTab === "quiz"       && <QuizView questions={questions} />}
         {!loading && activeTab === "flashcards" && <FlashcardsView cards={flashcards} />}
 
-        {/* Empty state — file uploaded but nothing generated yet */}
+        {/* Empty state */}
         {file && !activeTab && !loading && (
           <div className="empty-state">
             <div className="empty-icon">👆</div>
